@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { SearchState, ChampionSummary } from './types';
 import { fetchChampionGuide } from './services/geminiService';
 import { GuideDisplay } from './components/GuideDisplay';
-import { Search, Loader2, ChevronRight, X } from 'lucide-react';
+import { Search, Loader2, ChevronRight, X, Download } from 'lucide-react';
 
 export default function App() {
   const [state, setState] = useState<SearchState>({
@@ -19,6 +19,9 @@ export default function App() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [ddragonVersion, setDdragonVersion] = useState("14.21.1");
   const searchContainerRef = useRef<HTMLDivElement>(null);
+
+  // PWA Install state
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
 
   // Fetch Champion List on Mount
   useEffect(() => {
@@ -47,6 +50,35 @@ export default function App() {
 
     fetchChampions();
   }, []);
+
+  // Listen for PWA install prompt (Android/Chrome)
+  useEffect(() => {
+    const handler = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = () => {
+    if (!installPrompt) return;
+    // Show the install prompt
+    installPrompt.prompt();
+    // Wait for the user to respond to the prompt
+    installPrompt.userChoice.then((choiceResult: any) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+        setInstallPrompt(null);
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+    });
+  };
 
   // Filter suggestions when query changes
   useEffect(() => {
@@ -112,7 +144,20 @@ export default function App() {
       <div className="relative z-10 p-4 md:p-8">
         
         {/* Navigation / Header */}
-        <header className="flex flex-col items-center justify-center mb-12 mt-8">
+        <header className="flex flex-col items-center justify-center mb-12 mt-8 relative">
+          
+          {/* PWA Install Button (Only visible if installable) */}
+          {installPrompt && (
+            <button 
+              onClick={handleInstallClick}
+              className="absolute right-0 top-0 md:right-10 md:top-2 flex items-center gap-2 px-3 py-1.5 bg-[#C8AA6E]/20 hover:bg-[#C8AA6E]/40 border border-[#C8AA6E] text-[#C8AA6E] rounded-lg transition-all animate-bounce text-sm font-bold uppercase tracking-wider"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden md:inline">Instalar App</span>
+              <span className="md:hidden">App</span>
+            </button>
+          )}
+
           <div className="mb-6 relative">
             <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#C8AA6E] to-[#0AC8B9] opacity-75 blur animate-pulse"></div>
             <h1 className="relative bg-[#091428] px-6 py-2 rounded-full border border-[#C8AA6E] text-3xl md:text-5xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-[#F0E6D2] to-[#C8AA6E]">
