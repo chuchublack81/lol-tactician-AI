@@ -4,6 +4,7 @@ import { SearchState, ChampionSummary } from './types';
 import { fetchChampionGuide } from './services/geminiService';
 import { GuideDisplay } from './components/GuideDisplay';
 import { Search, Loader2, ChevronRight, X, Download } from 'lucide-react';
+import { playClick, playHover, playLockIn, playSuccess } from './utils/audio';
 
 export default function App() {
   const [state, setState] = useState<SearchState>({
@@ -66,6 +67,7 @@ export default function App() {
   }, []);
 
   const handleInstallClick = () => {
+    playClick();
     if (!installPrompt) return;
     // Show the install prompt
     installPrompt.prompt();
@@ -112,11 +114,13 @@ export default function App() {
     const searchTerm = specificChampion || state.query;
     if (!searchTerm.trim()) return;
 
+    playLockIn(); // Sound effect
     setShowSuggestions(false);
     setState(prev => ({ ...prev, query: searchTerm, loading: true, error: null, data: null }));
 
     try {
       const data = await fetchChampionGuide(searchTerm);
+      playSuccess(); // Sound effect
       setState(prev => ({ ...prev, loading: false, data }));
     } catch (err) {
       setState(prev => ({ 
@@ -191,6 +195,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
+                    playClick();
                     setState(prev => ({ ...prev, query: '' }));
                     setSuggestions([]);
                     setShowSuggestions(false);
@@ -204,6 +209,7 @@ export default function App() {
               <button 
                 type="submit"
                 disabled={state.loading}
+                onClick={() => !state.loading && state.query && playClick()}
                 className="px-6 py-4 text-[#C8AA6E] hover:text-[#F0E6D2] hover:bg-[#1E2328] transition-colors disabled:opacity-50 border-l border-[#C8AA6E]/10"
               >
                 {state.loading ? (
@@ -221,6 +227,7 @@ export default function App() {
                    suggestions.map((champ) => (
                      <div
                        key={champ.id}
+                       onMouseEnter={() => playHover()}
                        onMouseDown={() => handleSelectChampion(champ)}
                        className="flex items-center gap-4 p-3 hover:bg-[#C8AA6E]/20 cursor-pointer transition-colors border-b border-slate-800 last:border-0 group/item"
                      >
@@ -245,6 +252,7 @@ export default function App() {
                     allChampions.slice(0, 5).map((champ) => (
                       <div
                        key={champ.id}
+                       onMouseEnter={() => playHover()}
                        onMouseDown={() => handleSelectChampion(champ)}
                        className="flex items-center gap-4 p-3 hover:bg-[#C8AA6E]/20 cursor-pointer transition-colors border-b border-slate-800 last:border-0 group/item"
                      >
